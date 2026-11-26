@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traduz Aí!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: game show de auditório, alegre e alto, para projetar na sala
+   IDEA: um cartão de dicionário gigante num palco de TV com cronômetro
+   PICTURE: a palavra em inglês enorme, cronômetro circular e 5 botões-resposta
+   COLOUR and TYPE: cobalto de palco, amarelo-holofote, coral (erro), menta (acerto); Baloo 2 + Nunito
+   LAYOUT: barra de placar no topo, cartão central, alternativas em grade, revelação abaixo */
+:root{color-scheme:light dark;--bg:light-dark(#ff3d8b,#a3195a);--bg2:light-dark(#d9266f,#7a0f43);--card:light-dark(#ffffff,#f4f1e8);--ink:#101536;--on:#ffffff;--sun:#ffd23f;--ok:#2fd18b;--bad:#ff5a4e;--trap:#ff9f1c}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--on);font:17px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(60% 50% at 50% 0,rgba(255,210,63,.22),transparent 70%),repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.035) 46px 92px)}
+h1,h2,.word,.big{font-family:"Baloo 2",Nunito,sans-serif;line-height:1.05;margin:0}
+button{font:inherit;cursor:pointer;border:0;border-radius:16px;min-height:48px}
+button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
+.wrap{position:relative;max-width:1180px;margin:0 auto;padding:clamp(16px,3vw,36px) max(4vw,16px)}
+.hidden{display:none!important}
+/* topo */
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:clamp(14px,2.5vw,28px)}
+.brand{font-family:"Baloo 2";font-size:26px;color:var(--sun)}
+.brand small{display:block;font-family:Nunito;font-size:14px;color:#ffe3ef;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{background:var(--bg2);border:2px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 16px;font-weight:800;white-space:nowrap}
+.chip.on{background:var(--sun);color:var(--ink);border-color:var(--sun)}
+.ghost{background:transparent;color:var(--on);border:2px solid rgba(255,255,255,.35);padding:0 16px;font-weight:800}
+/* início */
+.start{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(24px,4vw,44px);min-height:72vh;text-align:center}
+.namebox{width:min(560px,100%);background:var(--card);color:var(--ink);border-radius:30px;padding:clamp(22px,4vw,36px);display:grid;gap:16px;box-shadow:0 14px 0 var(--bg2),0 30px 60px rgba(0,0,0,.3)}
+.namebox label{font-family:"Baloo 2";font-size:clamp(28px,4vw,38px);color:var(--bg)}
+.namebox input{font:inherit;font-size:clamp(20px,3vw,28px);font-weight:800;text-align:center;min-height:64px;border-radius:18px;border:3px solid #ff8fbd;background:#fff0f6;color:var(--ink);padding:0 16px}
+#pName{font-size:clamp(22px,3vw,30px)!important;font-weight:800;min-height:68px;text-align:center;background:#fff8d6!important;color:#3b0f2c!important;caret-color:#ff3d8b;border:4px solid #6b1d9e!important;-webkit-text-fill-color:#3b0f2c}
+#pName::placeholder{color:#a07a92;-webkit-text-fill-color:#a07a92}
+#pName:focus{outline:4px solid var(--sun);outline-offset:3px;border-color:#ff3d8b!important}
+.namebox .go{justify-self:center}
+.start h1{font-size:clamp(56px,11vw,130px);color:var(--sun)}
+.start p{font-size:19px;max-width:34em;color:#fff0f6}
+.demo{background:var(--card);color:var(--ink);border-radius:28px;padding:28px;box-shadow:0 16px 0 var(--bg2),0 30px 60px rgba(0,0,0,.3);transform:rotate(-2deg)}
+.demo .word{font-size:clamp(40px,6vw,64px);color:var(--bg)}
+.demo .pair{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.demo .pair span{padding:8px 14px;border-radius:12px;font-weight:800}
+.form{background:var(--bg2);border-radius:22px;padding:20px;margin-top:22px;display:grid;gap:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.row > b{width:100%;font-size:15px;color:#ffe3ef}
+.opt{background:rgba(255,255,255,.1);color:var(--on);padding:0 18px;font-weight:800}
+.opt[aria-pressed=true]{background:var(--sun);color:var(--ink)}
+input[type=text]{font:inherit;font-size:16px;min-height:48px;border-radius:14px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:var(--on);padding:0 14px;flex:1 1 160px}
+.go{background:var(--sun);color:var(--ink);font-family:"Baloo 2";font-size:26px;padding:6px 34px;min-height:60px;box-shadow:0 6px 0 #c99a00}
+.go:active{transform:translateY(4px);box-shadow:0 2px 0 #c99a00}
+/* jogo */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(14px,3vw,32px);align-items:center;background:var(--card);color:var(--ink);border-radius:30px;padding:clamp(20px,4vw,44px);box-shadow:0 14px 0 var(--bg2),0 30px 70px rgba(0,0,0,.35)}
+.label{font-weight:800;color:#8a4a6a;font-size:15px}
+.word{font-size:clamp(48px,9vw,112px);color:var(--bg);overflow-wrap:anywhere}
+.turn{display:inline-block;margin-top:8px;background:var(--sun);border-radius:999px;padding:4px 14px;font-weight:800}
+.timer{position:relative;width:clamp(110px,16vw,170px);aspect-ratio:1}
+.timer svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer .n{position:absolute;inset:0;display:grid;place-items:center;font-family:"Baloo 2";font-size:clamp(40px,6vw,64px)}
+.timer.low .n{color:var(--bad);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.12)}}
+.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:14px;margin-top:clamp(16px,3vw,28px)}
+.ans{position:relative;background:var(--bg2);color:var(--on);text-align:left;padding:14px 16px 14px 62px;font-size:clamp(18px,2vw,22px);font-weight:800;min-height:78px;border:3px solid rgba(255,255,255,.15);transition:transform .15s}
+.ans:hover:not(:disabled){transform:translateY(-3px);border-color:var(--sun)}
+.ans .k{position:absolute;left:12px;top:50%;translate:0 -50%;width:38px;height:38px;border-radius:12px;background:var(--sun);color:var(--ink);display:grid;place-items:center;font-family:"Baloo 2"}
+.ans:disabled{cursor:default}
+.ans.ok{background:var(--ok);color:var(--ink);border-color:#fff}
+.ans.bad{background:var(--bad);border-color:#fff}
+.ans.dim{opacity:.45}
+.ans .tag{display:block;font-size:13px;font-weight:800;margin-top:2px}
+.reveal{margin-top:20px;background:#3b0f2c;border-radius:22px;padding:18px 22px;display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between}
+.reveal .msg{flex:1 1 380px}
+.reveal .big{font-size:clamp(28px,4vw,40px)}
+.reveal .big.ok{color:var(--ok)}.reveal .big.bad{color:var(--bad)}.reveal .big.trap{color:var(--trap)}
+.reveal p{margin:4px 0 0;color:#fff0f6}
+.reveal b{color:var(--sun)}
+.hint{margin-top:14px;font-size:14px;color:#ffd6e7}
+/* final */
+.end{text-align:center;padding-top:4vh}
+.end h1{font-size:clamp(44px,7vw,80px);color:var(--sun)}
+.score{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:24px 0}
+.sbox{background:var(--card);color:var(--ink);border-radius:24px;padding:18px 30px;min-width:200px}
+.sbox .big{font-size:56px;color:var(--bg)}
+.sbox.win{outline:5px solid var(--sun)}
+.review{max-width:820px;margin:24px auto;text-align:left;background:var(--bg2);border-radius:22px;padding:8px 22px}
+.review div{display:flex;flex-wrap:wrap;gap:4px 14px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.review div:last-child{border:0}
+.review b{color:var(--sun);min-width:130px}
+.review s{color:#ffb3ad}
+.review .me{background:rgba(255,210,63,.18);border-radius:12px;padding-inline:10px}
+.brand span{color:#fff}
+.bounce span{display:inline-block;animation:hop 1.6s ease-in-out infinite}
+.bounce span:nth-child(2){animation-delay:.08s}.bounce span:nth-child(3){animation-delay:.16s}.bounce span:nth-child(4){animation-delay:.24s}.bounce span:nth-child(5){animation-delay:.32s}.bounce span:nth-child(6){animation-delay:.4s}.bounce span:nth-child(7){animation-delay:.48s}.bounce span:nth-child(8){animation-delay:.56s}.bounce span:nth-child(9){animation-delay:.64s}
+.bounce .y{color:#fff;text-shadow:4px 4px 0 #6b1d9e}
+@keyframes hop{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-14px) rotate(-4deg)}}
+.c0{background:#ff6b1a!important;color:#fff!important}.c1{background:#ffb000!important;color:#101536!important}.c2{background:#2fd18b!important;color:#101536!important}.c3{background:#22b5ff!important;color:#101536!important}.c4{background:#b06bff!important;color:#fff!important}
+.ans.c0,.ans.c1,.ans.c2,.ans.c3,.ans.c4{box-shadow:0 6px 0 rgba(0,0,0,.28)}
+.ans .k{background:rgba(255,255,255,.92)!important;color:#101536!important}
+.ans.ok{background:var(--ok)!important;color:#101536!important;outline:5px solid #fff;animation:win .5s}
+.ans.bad{background:#4a1d3a!important;color:#fff!important;animation:shake .45s}
+@keyframes win{40%{transform:scale(1.07)}}
+@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.stage.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.85) rotate(-2deg);opacity:0}100%{transform:none;opacity:1}}
+.streak{display:inline-block;margin:8px 0 0 8px;background:#6b1d9e;color:#fff;border-radius:999px;padding:4px 14px;font-weight:800}
+.floaters{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.floaters b{position:absolute;bottom:-60px;font-family:"Baloo 2";color:rgba(255,255,255,.09);animation:rise linear infinite;white-space:nowrap}
+@keyframes rise{to{transform:translateY(-120vh) rotate(8deg)}}
+.wrap{z-index:1}
+.emoji{font-size:1.1em}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:12px;height:18px;border-radius:3px;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media(max-width:700px){.start{grid-template-columns:1fr}.stage{grid-template-columns:1fr;justify-items:center;text-align:center}.ans{min-height:64px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">Traduz <span>Aí!</span><small>Quiz de inglês · E.E. Profº Djalma Octaviano</small></div>
+    <div class="chips"><span class="chips" id="chips"></span><button class="ghost" id="btnFs">Tela cheia</button></div>
+  </div>
+
+  <!-- INÍCIO -->
+  <section id="scrStart" class="start">
+    <h1 class="bounce" aria-label="Traduz Aí!"><span>T</span><span>r</span><span>a</span><span>d</span><span>u</span><span>z</span> <span class="y">A</span><span class="y">í</span><span class="y">!</span></h1>
+    <form class="namebox" id="nameForm">
+      <label for="pName">Digite seu nome</label>
+      <input type="text" id="pName" maxlength="24" autocomplete="off" placeholder="Seu nome aqui">
+      <button class="go" type="submit">Começar!</button>
+    </form>
+  </section>
+
+  <!-- JOGO -->
+  <section id="scrGame" class="hidden">
+    <div class="stage">
+      <div>
+        <div class="label" id="qLabel">Palavra 1 de 10 · Como se traduz…</div>
+        <div class="word" id="qWord">college</div>
+        <span class="turn hidden" id="qTurn"></span><span class="streak hidden" id="qStreak"></span>
+      </div>
+      <div class="timer" id="timer">
+        <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#fbe0ec" stroke-width="12"/><circle id="ring" cx="60" cy="60" r="52" fill="none" stroke="var(--bg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg>
+        <div class="n" id="tNum">30</div>
+      </div>
+    </div>
+    <div class="answers" id="answers"></div>
+    <div class="reveal hidden" id="reveal">
+      <div class="msg"><div class="big" id="rTitle"></div><p id="rText"></p></div>
+      <button class="go" id="btnNext">Próxima →</button>
+    </div>
+    <div class="hint">Atalhos: teclas 1 a 5 ou A a E para responder · Enter para avançar · P pausa o tempo</div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="scrEnd" class="end hidden">
+    <h1 id="eTitle">Fim de jogo!</h1>
+    <div class="score" id="eScore"></div>
+    <div class="review" id="eRank"></div>
+    <div class="review" id="eReview"></div>
+    <div class="row" style="justify-content:center"><button class="go" id="btnAgain">Próximo jogador</button></div>
+  </section>
+</div>
+<div class="floaters" id="floaters" aria-hidden="true"></div>
+<div class="confetti" id="confetti"></div>
+
+<script>
+{
+// [inglês, tradução certa, falso cognato (pegadinha) ou null, [3 distratores], explicação]
+const BANK=[
+["college","faculdade","colégio",["coleira","colega","colheita"],"Colégio em inglês é school / high school."],
+["school","escola","escala",["escolha","esquilo","sócio"],"High school = ensino médio."],
+["resume","currículo","resumo",["reunião","recibo","retrato"],"Resumo em inglês é summary."],
+["summary","resumo","sumário",["sumiço","soma","semana"],"Sumário (índice) em inglês é table of contents."],
+["notice","perceber / notar","notícia",["nota fiscal","noite","notório"],"Notícia em inglês é news."],
+["news","notícias","novos",["nozes","nuvens","ninhos"],"\"News\" vem de new: aquilo que é novidade."],
+["newspaper","jornal","papel novo",["revista","papelaria","caderno"],"News (notícias) + paper (papel) = jornal."],
+["friendliness","simpatia / ser amigável","amizade",["frieza","fritura","liberdade"],"Amizade em inglês é friendship."],
+["damage","prejuízo / dano","dama",["lucro","lousa","danado"],"Loss e damage indicam perda ou prejuízo financeiro ou material."],
+["weird","esquisito / estranho",null,["maravilhoso","assustado","sagrado","vertical"],"Weird lembra wired, mas é o que foge do normal."],
+["counter","balcão (de cozinha ou loja)","contador",["contra","conto","cantor"],"Contador (profissão) em inglês é accountant."],
+["customs","costumes / tradições","fantasias",["clientes","custos","cortinas"],"No aeroporto, customs também é a alfândega."],
+["journal","diário pessoal","jornal",["jornalista","jornada","juramento"],"Jornal em inglês é newspaper."],
+["sensitive","sensível","sensato",["sensual","sentado","sensacional"],"Sensato em inglês é sensible."],
+["sensible","sensato","sensível",["sentido","sensor","sensacional"],"Sensível em inglês é sensitive."],
+["sympathy","compaixão / pêsames","simpatia",["sinfonia","sintonia","sintoma"],"Simpatia em inglês é friendliness."],
+["prejudice","preconceito","prejuízo",["prejudicado","precipício","predileção"],"Prejuízo em inglês é loss ou damage."],
+["exquisite","requintado / refinado","esquisito",["exigente","exausto","explícito"],"Esquisito em inglês é weird."],
+["receipt","recibo (de compras)","receita",["recepção","receio","recipiente"],"Receita culinária em inglês é recipe."],
+["recipe","receita culinária","recibo",["recepção","recipiente","réplica"],"Recibo em inglês é receipt."],
+["balcony","sacada / varanda","balcão",["baleia","balão","banco"],"Balcão em inglês é counter."],
+["costume","fantasia (de Halloween)","costume",["cortina","custódia","camisola"],"Costume (hábito) em inglês é habit ou custom."],
+["pretend","fingir","pretender",["prender","perder","preparar"],"Pretender em inglês é intend."],
+["push","empurrar","puxar",["pular","pausar","pescar"],"Puxar em inglês é pull: atenção nas portas!"],
+["pull","puxar","pular",["polir","empurrar","pulsar"],"Pular em inglês é jump."],
+["actually","na verdade","atualmente",["exatamente","acidentalmente","ativamente"],"Atualmente em inglês é nowadays ou currently."],
+["parents","pais (pai e mãe)","parentes",["patrões","parceiros","padrinhos"],"Parentes em inglês é relatives."],
+["library","biblioteca","livraria",["liberdade","libra","laboratório"],"Livraria em inglês é bookstore."],
+["lunch","almoço","lanche",["lua","lençol","jantar"],"Lanche em inglês é snack."],
+["eventually","finalmente / no fim","eventualmente",["evidentemente","imediatamente","raramente"],"Eventualmente (às vezes) em inglês é occasionally."],
+["cigar","charuto","cigarro",["cigarra","sigilo","chapéu"],"Cigarro em inglês é cigarette."],
+["fabric","tecido","fábrica",["fábula","fivela","favor"],"Fábrica em inglês é factory."],
+["data","dados (informações)","data (dia do calendário)",["dama","dedos","datilografia"],"Data do calendário em inglês é date."],
+["attend","frequentar / comparecer","atender",["atentar","aterrissar","entender"],"Atender (telefone) em inglês é answer."],
+["legend","lenda","legenda",["legume","lençol","legado"],"Legenda de filme em inglês é subtitle."],
+["novel","romance (livro)","novela",["novato","noivado","nuvem"],"Novela de TV em inglês é soap opera."],
+["intend","pretender / ter intenção","entender",["intimidar","intervir","estender"],"Entender em inglês é understand."],
+["mayor","prefeito","maior",["maiô","mãe","mestre"],"Maior em inglês é bigger ou major."],
+["lecture","palestra","leitura",["letreiro","laticínio","lençol"],"Leitura em inglês é reading."],
+["assist","ajudar","assistir",["assinar","assustar","assar"],"Assistir (TV) em inglês é watch."],
+["realize","perceber / dar-se conta","realizar",["relaxar","reclamar","revisar"],"Realizar (um sonho) em inglês é achieve."],
+["appointment","consulta / horário marcado","apontamento",["aposentadoria","apartamento","aplauso"],"Apontamento (anotação) em inglês é note."],
+["exit","saída","êxito",["exílio","exame","existir"],"Êxito em inglês é success."],
+["comprehensive","abrangente / completo","compreensivo",["comprido","compressor","competitivo"],"Compreensivo em inglês é understanding."],
+["support","apoiar","suportar (aguentar)",["soprar","supor","surpreender"],"Suportar (aguentar) em inglês é stand ou bear."],
+["tenant","inquilino","tenente",["tentativa","tenda","temperatura"],"Tenente em inglês é lieutenant."],
+["alias","codinome / outro nome","aliás",["aliança","alicate","alívio"],"Aliás em inglês é by the way."],
+["anthem","hino","antena",["antigo","anjo","âncora"],"Antena em inglês é antenna."],
+["large","grande","largo",["lagarto","lago","lagosta"],"Largo em inglês é wide."],
+["pasta","macarrão","pasta (de arquivos)",["pastel","pastor","pátio"],"Pasta de arquivos em inglês é folder."],
+["retired","aposentado","retirado",["retido","reticente","retratado"],"Retirado em inglês é removed."],
+["injury","ferimento / lesão","injúria",["injeção","inveja","indústria"],"Injúria (ofensa) em inglês é insult."],
+["deception","engano / fraude","decepção",["decisão","descida","decoração"],"Decepção em inglês é disappointment."],
+["stranger","desconhecido","estrangeiro",["estragado","estábulo","estudante"],"Estrangeiro em inglês é foreigner."],
+["mascara","rímel","máscara",["mascote","mastigar","maquete"],"Máscara em inglês é mask."],
+["educated","culto / instruído","educado (gentil)",["edificado","editado","eleito"],"Educado (gentil) em inglês é polite."],
+["ingenious","engenhoso / genial","ingênuo",["ingrato","ingrediente","indígena"],"Ingênuo em inglês é naive."],
+["cafeteria","refeitório","cafeteria",["cafezal","cachoeira","carteira"],"Cafeteria (lugar do cafezinho) em inglês é coffee shop."],
+["terrific","incrível / maravilhoso","terrível",["territorial","terreno","termômetro"],"Terrível em inglês é terrible."],
+["hazard","perigo / risco","azar",["azeite","haras","hábito"],"Azar em inglês é bad luck."],
+["compromise","acordo / meio-termo","compromisso",["comprimido","compressa","comparação"],"Compromisso (na agenda) em inglês é appointment."],
+["policy","política (regras)","polícia",["polidez","poluição","polegada"],"Polícia em inglês é police."],
+["record","gravar / registrar","recordar",["recortar","recolher","reclamar"],"Recordar (lembrar) em inglês é remember."],
+["apology","pedido de desculpas","apologia",["apólice","aplauso","apogeu"],"Apologia (defesa de uma ideia) em inglês é praise ou defense."],
+["sort","tipo / classificar","sorte",["sorvete","sorriso","soldado"],"Sorte em inglês é luck."],
+["commodity","mercadoria","comodidade",["comunidade","cômoda","comédia"],"Comodidade em inglês é comfort."],
+["adept","habilidoso / especialista","adepto",["adulto","adesivo","advogado"],"Adepto (seguidor) em inglês é follower."],
+["genial","simpático / cordial","genial",["general","gênero","gelado"],"Genial (brilhante) em inglês é brilliant."],
+["scholar","estudioso / acadêmico","escolar",["escultor","escalar","escolhido"],"Material escolar em inglês é school supplies."],
+["parade","desfile","parada",["paraíso","parede","padaria"],"Parada (de ônibus) em inglês é stop."],
+["collar","gola / coleira","colar (joia)",["colher","colchão","colega"],"Colar (joia) em inglês é necklace."],
+["office","escritório","ofício",["oficina","ofensa","ótica"],"Ofício (profissão) em inglês é trade."],
+["contest","competição / concurso","contestar",["contexto","contrato","conteúdo"],"Contestar em inglês é dispute."],
+["audience","plateia / público","audiência (no tribunal)",["audição","áudio","ousadia"],"Audiência no tribunal em inglês é hearing."],
+["avocado","abacate","advogado",["abacaxi","avental","aveia"],"Advogado em inglês é lawyer."],
+["marmalade","geleia de laranja","marmelada",["mármore","marmita","margarina"],"Marmelada em inglês é quince jam."],
+["cartoon","desenho animado","cartão",["cartaz","carrossel","cartório"],"Cartão em inglês é card."],
+["requirement","requisito / exigência","requerimento",["recrutamento","rendimento","reconhecimento"],"Requerimento (pedido formal) em inglês é request."],
+["physician","médico","físico",["fiscal","fichário","filósofo"],"Físico (cientista) em inglês é physicist."],
+["estate","propriedade / bens","estado",["estátua","estante","estágio"],"Estado em inglês é state."]
+];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const TIME=30,CIRC=326.7;
+let cfg={n:10},game=null,tick=null,paused=false,audio=null;
+
+function choiceRow(el,opts,key){
+  el.innerHTML=opts.map(([v,l])=>`<button class="opt" data-v="${v}" aria-pressed="${cfg[key]==v}">${l}</button>`).join(" ");
+  el.onclick=e=>{const b=e.target.closest("button");if(!b)return;cfg[key]=isNaN(b.dataset.v)?b.dataset.v:+b.dataset.v;choiceRow(el,opts,key)};
+}
+
+
+
+function beep(f,d,v=.15){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=f;o.type="triangle";g.gain.value=v;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.stop(audio.currentTime+d)}catch(e){}}
+const sOk=()=>{beep(660,.15);setTimeout(()=>beep(880,.25),130)};
+const sBad=()=>{beep(220,.35)};
+
+function show(id){for(const s of ["scrStart","scrGame","scrEnd"])$(s).classList.toggle("hidden",s!==id)}
+
+function chips(){
+  if(!game){$("chips").innerHTML="";return}
+  $("chips").innerHTML=`<span class="chip">${esc(game.name)}</span><span class="chip on">${game.pts} pontos</span><span class="chip">Acertos: ${game.hits}</span><button class="ghost" id="btnQuit">Sair</button>`;
+  $("btnQuit").onclick=()=>{stop();game=null;chips();show("scrStart")};
+}
+
+function start(){
+  const list=shuffle(BANK).slice(0,cfg.n);
+  const name=$("pName").value.trim();
+  if(!name){const i=$("pName");i.placeholder="Digite seu nome para jogar!";i.focus();i.animate?.([{transform:"translateX(-8px)"},{transform:"translateX(8px)"},{transform:"none"}],{duration:300});return}
+  game={name,list,cur:-1,hits:0,pts:0,streak:0,best:0,log:[]};$("pName").blur();
+  show("scrGame");next();
+}
+
+function next(){
+  game.cur++;
+  if(game.cur>=game.list.length)return finish();
+  const [en,ok,trap,others]=game.list[game.cur];
+  const opts=shuffle([{t:ok,c:1},...(trap?[{t:trap,trap:1}]:[]),...others.slice(0,trap?3:4).map(t=>({t}))]);
+  game.opts=opts;game.done=false;
+  $("qLabel").textContent=`Palavra ${game.cur+1} de ${game.list.length} · Como se traduz…`;
+  $("qWord").textContent=en;
+  const tt=$("qTurn");tt.classList.remove("hidden");tt.textContent="Jogando: "+game.name;
+  $("answers").innerHTML=opts.map((o,i)=>`<button class="ans c${i}" data-i="${i}"><span class="k">${"ABCDE"[i]}</span>${esc(o.t)}</button>`).join("");
+  $("reveal").classList.add("hidden");
+  const st=document.querySelector(".stage");st.classList.remove("pop");void st.offsetWidth;st.classList.add("pop");
+  chips();
+  startTimer();
+}
+
+function startTimer(){
+  stop();game.left=TIME;paused=false;paint();
+  tick=setInterval(()=>{if(paused)return;game.left--;paint();if(game.left<=5&&game.left>0)beep(990,.08,.08);if(game.left<=0)answer(-1)},1000);
+}
+function stop(){clearInterval(tick);tick=null}
+function paint(){
+  $("tNum").textContent=game.left;
+  $("ring").style.strokeDashoffset=CIRC*(1-game.left/TIME);
+  $("ring").style.stroke=game.left<=10?"var(--bad)":"var(--bg)";
+  $("timer").classList.toggle("low",game.left<=10);
+}
+
+function answer(i){
+  if(!game||game.done)return;game.done=true;stop();
+  const [en,ok,trap,,tip]=game.list[game.cur];
+  const pick=game.opts[i];const right=pick&&pick.c;const fell=pick&&pick.trap;
+  [...$("answers").children].forEach((b,k)=>{
+    b.disabled=true;const o=game.opts[k];
+    if(o.c)b.classList.add("ok");else if(k===i)b.classList.add("bad");else b.classList.add("dim");
+  });
+  let gain=0;if(right){game.hits++;sOk();burst(28);gain=10+Math.ceil(game.left/3)+(game.streak>=2?5:0);game.pts+=gain}
+  else sBad();
+  game.log.push({en,ok,trap,pick:pick?pick.t:null,right,fell});
+  const T=$("rTitle");
+  const pickMsg=a=>a[Math.floor(Math.random()*a.length)];
+  if(right){game.streak++;game.best=Math.max(game.best||0,game.streak);T.className="big ok";T.textContent=game.left>=20?pickMsg(["Rápido como um raio!","Nem pensou, já respondeu!","Velocidade máxima!"]):pickMsg(["Acertou, mandou bem!","É isso aí!","Very good!","Arrasou!","Na mosca!"])}
+  else{game.streak=0;T.className="big bad";T.textContent=i<0?pickMsg(["O tempo voou!","Tic-tac… acabou!","O relógio venceu essa!"]):pickMsg(["Quase! Mas não foi.","Ops! Errou feio, errou rude.","Not this time!","Essa enganou, hein?","Vixe! Não era essa."])}
+  const sk=$("qStreak");if(game.streak>=2){sk.textContent=game.streak+" acertos seguidos!";sk.classList.remove("hidden")}else sk.classList.add("hidden");
+  const pre=(gain?`<b>+${gain} pontos!</b> `:"")+`<b>${esc(en)}</b> significa <b>${esc(ok)}</b>. `;
+  $("rText").innerHTML=pre+esc(tip);
+  $("btnNext").textContent=game.cur+1>=game.list.length?"Ver resultado →":"Próxima →";
+  $("reveal").classList.remove("hidden");
+  chips();
+  $("btnNext").focus({preventScroll:true});
+}
+
+function finish(){
+  stop();show("scrEnd");
+  const n=game.list.length;
+  const p=game.hits/n;
+  $("eTitle").textContent=(p>=.8?"Mandou muito bem, ":p>=.5?"Bom trabalho, ":"Bora praticar mais, ")+game.name+"!";
+  $("eScore").innerHTML=`<div class="sbox win"><div class="label">Pontuação</div><div class="big">${game.pts}</div></div><div class="sbox"><div class="label">Acertos</div><div class="big">${game.hits}/${n}</div></div><div class="sbox"><div class="label">Maior sequência</div><div class="big">${game.best}</div></div>`;
+  let rk=[];try{rk=JSON.parse(localStorage.getItem("traduzai-ranking")||"[]")}catch(e){}
+  const me={name:game.name,pts:game.pts,hits:game.hits,n,t:Date.now()};rk.push(me);rk.sort((a,b)=>b.pts-a.pts||a.t-b.t);rk=rk.slice(0,10);
+  try{localStorage.setItem("traduzai-ranking",JSON.stringify(rk))}catch(e){}
+  $("eRank").innerHTML=`<h2 style="padding:10px 0;color:var(--sun)">Ranking da sala</h2>`+rk.map((r,i)=>`<div${r===me?' class="me"':""}><b>${i+1}º ${esc(r.name)}</b><span>${r.pts} pontos</span><span>${r.hits}/${r.n} acertos</span></div>`).join("")+`<p style="margin:8px 0 12px"><button class="ghost" id="btnClear">Zerar ranking</button></p>`;
+  $("btnClear").onclick=()=>{try{localStorage.removeItem("traduzai-ranking")}catch(e){}$("eRank").innerHTML=`<h2 style="padding:10px 0;color:var(--sun)">Ranking zerado!</h2>`};
+  const miss=game.log.filter(l=>!l.right);
+  $("eReview").innerHTML=miss.length?`<h2 style="padding:10px 0;color:var(--sun)">Para revisar</h2>`+miss.map(l=>`<div><b>${esc(l.en)}</b><span>${esc(l.ok)}</span>${l.pick?`<s>${esc(l.pick)}</s>`:"<s>sem resposta</s>"}</div>`).join(""):`<h2 style="padding:14px 0;color:var(--sun)">Nenhum erro! Gabaritou!</h2>`;
+  burst(90);game.end=true;$("chips").innerHTML="";
+}
+
+function burst(n){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const c=$("confetti"),cols=["#ffd23f","#2fd18b","#ff5a4e","#ffffff","#ff9f1c"];
+  for(let i=0;i<n;i++){const e=document.createElement("i");e.style.left=Math.random()*100+"vw";e.style.background=cols[i%5];e.style.animationDelay=Math.random()*.6+"s";c.appendChild(e);setTimeout(()=>e.remove(),3200)}
+}
+
+{const f=$("floaters");if(!matchMedia("(prefers-reduced-motion: reduce)").matches)f.innerHTML=shuffle(BANK).slice(0,18).map((w,i)=>`<b style="left:${(i*37)%96}vw;font-size:${28+(i*13)%46}px;animation-duration:${14+(i*7)%16}s;animation-delay:-${(i*3)%20}s">${esc(w[0])}</b>`).join("");}
+
+$("btnAgain").onclick=()=>{game=null;$("pName").value="";show("scrStart");$("pName").focus()};
+$("btnNext").onclick=()=>next();
+$("answers").onclick=e=>{const b=e.target.closest(".ans");if(b)answer(+b.dataset.i)};
+$("nameForm").addEventListener("submit",e=>{e.preventDefault();beep(520,.1,.05);start()});
+$("btnFs").onclick=()=>{try{const d=document.documentElement;(document.fullscreenElement?document.exitFullscreen():d.requestFullscreen()).catch(()=>{})}catch(e){}};
+document.addEventListener("keydown",e=>{
+  if(!game||game.end||e.target.tagName==="INPUT")return;
+  const k=e.key.toUpperCase();const idx="12345".indexOf(k)>=0?"12345".indexOf(k):"ABCDE".indexOf(k);
+  if(!game.done&&idx>=0&&k.length===1)answer(idx);
+  else if(game.done&&e.key==="Enter"){e.preventDefault();next()}
+  else if(k==="P"&&!game.done){paused=!paused;$("tNum").textContent=paused?"II":game.left}
+});
+}
+</script>
+</body>
+</html>
